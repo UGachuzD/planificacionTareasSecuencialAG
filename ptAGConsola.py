@@ -3,8 +3,11 @@ import json
 import warnings
 import matplotlib.pyplot as plt
 from tabulate import tabulate
+warnings.filterwarnings("ignore")
 
-# Variables globales para los datos
+"""
+    Datos por defecto que pueden llenarse a mano:
+"""
 tiemposOperaciones = {
     'O1': [3.5, 6.7, 2.5, 8.2],
     'O2': [5.5, 4.2, 7.6, 9.0],
@@ -22,22 +25,42 @@ trabajos = {
     'j6': ['O1', 'O2', 'O4', 'O5']
 }
 
-# Parámetros del algoritmo genético
+""" 
+    Parametros del algoritmo genético:
+"""
 tamPoblacion = 20
 generaciones = 100
 tasaMutacion = 0.1
 tasaCruce = 0.8
 
-# Función para generar una planificación aleatoria
 def generarPlanificacion():
+    """
+    Genera una planificación de trabajos asignando aleatoriamente las operaciones a las máquinas disponibles.
+
+    Returns:
+        list: Una lista de tuplas que representa la planificación generada. Cada tupla contiene el nombre del trabajo y una lista de asignaciones 
+        de máquinas para cada operación del trabajo.
+    """
     planificacion = []
     for trabajo, operaciones in trabajos.items():
         asignacionMaquinas = [random.choice(range(1, len(tiemposOperaciones[operacion]) + 1)) for operacion in operaciones]
         planificacion.append((trabajo, asignacionMaquinas))
     return planificacion
 
-# Función para evaluar el makespan de una planificación y guardar los tiempos de inicio y fin
+
 def evaluarPlanificacion(planificacion):
+    """
+    Evalúa una planificación dada y devuelve el tiempo máximo de finalización de las máquinas y los tiempos de inicio y finalización de cada trabajo.
+
+    Args:
+        planificacion (list): Una lista de tuplas que representan la asignación de máquinas a cada trabajo. Cada tupla contiene el nombre del trabajo 
+        y una lista de asignaciones de máquinas para cada operación del trabajo.
+
+    Returns:
+        tuple: Una tupla que contiene el tiempo máximo de finalización de las máquinas y una lista de tuplas que representan los tiempos de inicio y 
+        finalización de cada trabajo. Cada tupla contiene el nombre del trabajo, el nombre de la operación, el número de la máquina, el tiempo de inicio 
+        y el tiempo de finalización.
+    """
     numero_maquinas = len(next(iter(tiemposOperaciones.values())))
     tiemposMaquinas = [0] * (numero_maquinas + 1) 
     tiemposFinTrabajos = {trabajo: 0 for trabajo in trabajos.keys()} 
@@ -54,27 +77,71 @@ def evaluarPlanificacion(planificacion):
         tiemposFinTrabajos[trabajo] = tiempoInicioTrabajo
     return max(tiemposMaquinas), tiemposTrabajos
 
-# Función de selección por torneo
+
 def seleccionTorneo(poblacion, puntajes, k=2):
+    """
+    Selecciona individuos de la población mediante el método del torneo.
+
+    Args:
+        poblacion (list): Una lista de individuos de la población.
+        puntajes (list): Una lista de puntajes correspondientes a los individuos de la población.
+        k (int): El número de individuos a seleccionar en cada torneo. Por defecto es 2.
+
+    Returns:
+        object: El individuo seleccionado con el puntaje más bajo.
+
+    """
     seleccionados = random.sample(list(zip(poblacion, puntajes)), k)
     seleccionados.sort(key=lambda x: x[1])
     return seleccionados[0][0]
 
-# Función de cruce (Cruza de un punto)
+
 def cruce(padre1, padre2):
+    """
+    Realiza el cruce de dos padres para generar dos hijos.
+
+    Args:
+        padre1 (list): Lista que representa el primer padre.
+        padre2 (list): Lista que representa el segundo padre.
+
+    Returns:
+        tuple: Una tupla que contiene los dos hijos generados.
+    """
     punto = random.randint(1, len(padre1)-1)
     hijo1 = padre1[:punto] + padre2[punto:]
     hijo2 = padre2[:punto] + padre1[punto:]
     return hijo1, hijo2
 
-# Función de mutación
+
 def mutacion(planificacion):
+    """
+    Realiza una mutación en la planificación dada.
+
+    Args:
+        planificacion (list): Una lista que representa la planificación actual.
+
+    Returns:
+        None
+
+    """
     trabajo, asignacionMaquinas = random.choice(planificacion)
     indice = random.randint(0, len(asignacionMaquinas)-1)
     asignacionMaquinas[indice] = random.choice(range(1, len(tiemposOperaciones[trabajos[trabajo][indice]]) + 1))
 
-# Algoritmo genético
+
 def algoritmoGenetico(tamPoblacion, generaciones, tasaMutacion, tasaCruce):
+    """
+    Implementa el algoritmo genético para la planificación de tareas secuencial.
+    
+    Args:
+        tamPoblacion (int): El tamaño de la población de individuos.
+        generaciones (int): El número de generaciones a evolucionar.
+        tasaMutacion (float): La probabilidad de mutación de un individuo.
+        tasaCruce (float): La probabilidad de cruce entre dos individuos.
+    
+    Returns:
+        tuple: Una tupla que contiene la mejor planificación encontrada, el puntaje de la mejor planificación y los tiempos de los trabajos.
+    """
     poblacion = [generarPlanificacion() for _ in range(tamPoblacion)]
     
     for generacion in range(generaciones):
@@ -99,8 +166,17 @@ def algoritmoGenetico(tamPoblacion, generaciones, tasaMutacion, tasaCruce):
     mejorPuntaje, tiemposTrabajos = evaluarPlanificacion(mejorPlanificacion)
     return mejorPlanificacion, mejorPuntaje, tiemposTrabajos
 
-# Función para graficar el cronograma de los trabajos
+
 def graficarCronograma(tiemposTrabajos):
+    """
+    Genera un gráfico de barras horizontal que muestra el cronograma de ejecución de los trabajos en diferentes máquinas.
+
+    Args:
+        tiemposTrabajos (list): Una lista de tuplas que contienen información sobre cada trabajo, operación, máquina, inicio y fin.
+
+    Returns:
+        None
+    """
     # Determinar el número de máquinas en base al primer elemento de tiemposOperaciones
     numero_maquinas = len(next(iter(tiemposOperaciones.values())))
     etiquetas_maquinas = [f'M{i+1}' for i in range(numero_maquinas)]
@@ -127,8 +203,18 @@ def graficarCronograma(tiemposTrabajos):
     plt.title('Cronograma de ejecución de los trabajos')
     plt.show()
 
-# Función para cargar datos desde un archivo JSON
+
 def cargarDatosJSON(file_path):
+    """
+    Carga los datos desde un archivo JSON.
+
+    Args:
+        file_path (str): La ruta del archivo JSON.
+
+    Returns:
+        tuple: Una tupla que contiene los tiempos de operaciones y los trabajos cargados desde el archivo JSON.
+           Si el archivo no se encuentra o no se puede decodificar, se devuelve (None, None).
+    """
     try:
         with open(file_path, 'r') as file:
             datos = json.load(file)
@@ -143,8 +229,13 @@ def cargarDatosJSON(file_path):
         print("Error al decodificar el archivo JSON. Asegúrese de que el archivo esté en el formato correcto.")
         return None, None
 
-# Función del menú
+
 def menu():
+    """
+        Muestra un menú de opciones y permite al usuario seleccionar una opción.
+        Las opciones incluyen usar datos predefinidos, cargar datos desde un archivo JSON,
+        ejecutar el algoritmo genético y salir del programa.
+    """
     global tiemposOperaciones, trabajos
     while True:
         print("Menú:")
@@ -155,7 +246,7 @@ def menu():
         opcion = input("Seleccione una opción: ")
 
         if opcion == '1':
-            # Restaurar datos predefinidos
+            # Restaurar datos predefinidos porque sino se queda con los ultimos datos cargados
             tiemposOperaciones = {
                 'O1': [3.5, 6.7, 2.5, 8.2],
                 'O2': [5.5, 4.2, 7.6, 9.0],
@@ -188,8 +279,17 @@ def menu():
         else:
             print("Opción no válida. Intente de nuevo.")
 
-# Función principal
+
 def main():
+    """
+    Función principal del programa que ejecuta el algoritmo genético para encontrar la mejor planificación de tareas.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+    """
     random.seed(7)
     mejorPlanificacion, mejorPuntaje, tiemposTrabajos = algoritmoGenetico(tamPoblacion, generaciones, tasaMutacion, tasaCruce)
 
@@ -208,6 +308,8 @@ def main():
     # Imprimir la tabla de reporte
     print(tabulate(tablaReporte, headers=['Máquina', 'Trabajos/Operaciones', 'Tiempo Inicial', 'Tiempo Final', 'Tiempo Total'], tablefmt='grid'))
 
-# Ejecutar el menú
+"""
+    Ejecutar el programa
+"""
 if __name__ == "__main__":
     menu()
